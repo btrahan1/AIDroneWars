@@ -1,0 +1,229 @@
+@page "/"
+@using AIDroneWars.Services
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+@inject OllamaService AI
+
+<PageTitle>AIDroneWars | Tactical Satellite Console</PageTitle>
+
+<div class="tactical-container">
+    <div class="sidebar">
+        <div class="header">
+            <h1 class="logo">AI DRONE WARS</h1>
+            <div class="status-badge @(isMissionActive ? "active" : "standby")">
+                MISSION: @(isMissionActive ? "SORTIE ACTIVE" : "IDLE")
+            </div>
+        </div>
+
+        <div class="btn-group" style="margin-top: 1rem;">
+            <button class="btn-tactical @(isMissionActive ? "" : "pulse")" @onclick="ToggleMission">
+                @(isMissionActive ? "ABORT SORTIE" : "EXECUTE SORTIE")
+            </button>
+        </div>
+
+        <div class="telemetry">
+            <div class="stat-box">
+                <span class="label">SPEED</span>
+                <span class="value">0.15 M/S</span>
+            </div>
+            <div class="stat-box">
+                <span class="label">ALTITUDE</span>
+                <span class="value">6.0 M</span>
+            </div>
+            <div class="stat-box" style="border-color: var(--neon-red);">
+                <span class="label">KILLS</span>
+                <span class="value">@killCount</span>
+            </div>
+        </div>
+
+        <div class="combat-log" id="log-container">
+            <div class="log-title">TACTICAL DATA FEED</div>
+            <div class="log-entries">
+                @foreach (var entry in CombatLog.AsEnumerable().Reverse())
+                {
+                    <div class="log-entry @entry.LogType.ToLower()">
+                        <div class="log-header">
+                            <span class="log-time">[@entry.Timestamp.ToString("HH:mm:ss")]</span>
+                            <span class="log-msg">@entry.Message</span>
+                            <div class="log-btns">
+                                @if (!string.IsNullOrEmpty(entry.RawIntel))
+                                {
+                                    <button class="mini-btn" @onclick="() => entry.ShowRaw = !entry.ShowRaw">RAW_INTEL</button>
+                                }
+                                @if (!string.IsNullOrEmpty(entry.SensorContext))
+                                {
+                                    <button class="mini-btn" @onclick="() => entry.ShowSensors = !entry.ShowSensors">SENSORS</button>
+                                }
+                            </div>
+                        </div>
+                        @if (entry.ShowSensors)
+                        {
+                            <div class="log-peek context">SIGNAL: @entry.SensorContext</div>
+                        }
+                        @if (entry.ShowRaw)
+                        {
+                            <div class="log-peek intel">BRAIN: @entry.RawIntel</div>
+                        }
+                        @if (!string.IsNullOrEmpty(entry.Reasoning))
+                        {
+                            <div class="log-reason">TACTICAL: @entry.Reasoning</div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="viewport">
+        <canvas id="droneCanvas"></canvas>
+        <div class="overlay-hud">
+            <div class="crosshair"></div>
+            <div class="sensor-overlay">TARGET_SCAN_RESERVE_0x44</div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root { 
+        --neon-blue: #00f2fe; 
+        --neon-green: #08f7ce;
+        --neon-red: #ff3366;
+        --bg-dark: #020205;
+        --glass: rgba(255, 255, 255, 0.05);
+    }
+
+    body { background: var(--bg-dark); color: white; margin: 0; overflow: hidden; font-family: 'JetBrains Mono', monospace; }
+
+    .tactical-container { display: flex; height: 100vh; overflow: hidden; }
+
+    .sidebar { width: 400px; background: rgba(0, 5, 10, 0.95); border-right: 1px solid var(--neon-blue); display: flex; flex-direction: column; padding: 1.5rem; }
+
+    .logo { font-size: 1.4rem; font-weight: 800; letter-spacing: 4px; color: var(--neon-blue); text-shadow: 0 0 15px var(--neon-blue); margin-bottom: 0.5rem; }
+
+    .status-badge { font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 4px; display: inline-block; border: 1px solid; }
+    .status-badge.active { color: var(--neon-green); border-color: var(--neon-green); text-shadow: 0 0 5px var(--neon-green); }
+    .status-badge.standby { color: #58a6ff; border-color: #58a6ff; }
+
+    .telemetry { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; margin: 1.5rem 0; }
+    .stat-box { background: var(--glass); padding: 0.5rem; border-radius: 4px; border-left: 2px solid var(--neon-blue); }
+    .stat-box .label { font-size: 0.5rem; color: #888; display: block; }
+    .stat-box .value { font-size: 0.9rem; font-weight: bold; }
+
+    .combat-log { flex: 1; overflow: hidden; display: flex; flex-direction: column; border: 1px solid var(--glass); padding: 0.5rem; background: rgba(0,0,0,0.3); }
+    .log-title { font-size: 0.6rem; color: #555; border-bottom: 1px solid #333; margin-bottom: 0.5rem; padding-bottom: 0.2rem; }
+    .log-entries { flex: 1; overflow-y: auto; font-size: 0.7rem; }
+    .log-entry { margin-bottom: 0.6rem; padding-bottom: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .log-entry.foe { color: var(--neon-red); }
+    .log-entry.friend { color: var(--neon-green); }
+    .log-reason { font-size: 0.6rem; color: white; background: rgba(255,255,255,0.05); padding: 0.2rem 0.4rem; margin-top: 0.2rem; }
+
+    .log-btns { display: flex; gap: 0.2rem; }
+    .mini-btn { background: none; border: 1px solid rgba(0,242,254,0.3); color: var(--neon-blue); font-size: 0.5rem; cursor: pointer; padding: 0.1rem 0.3rem; }
+    .mini-btn:hover { border-color: var(--neon-blue); background: rgba(0,242,254,0.1); }
+    .log-peek { font-family: monospace; font-size: 0.55rem; padding: 0.4rem; margin-top: 0.3rem; border-radius: 2px; word-break: break-all; }
+    .log-peek.context { border-left: 2px solid var(--neon-green); background: rgba(8,247,206,0.05); color: var(--neon-green); }
+    .log-peek.intel { border-left: 2px solid var(--neon-blue); background: rgba(0,242,254,0.05); color: var(--neon-blue); }
+
+    .viewport { flex: 1; position: relative; }
+    #droneCanvas { width: 100%; height: 100%; display: block; outline: none; }
+
+    .overlay-hud { position: absolute; pointer-events: none; top: 0; left: 0; right: 0; bottom: 0; border: 40px solid rgba(0, 10, 20, 0.2); }
+    .crosshair { position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--neon-blue); opacity: 0.3; transform: translate(-50%, -50%); }
+    .sensor-overlay { position: absolute; bottom: 20px; left: 20px; font-size: 0.7rem; color: var(--neon-blue); }
+
+    .btn-tactical { background: var(--neon-blue); color: black; border: none; padding: 1rem; width: 100%; font-weight: bold; cursor: pointer; transition: 0.3s; clip-path: polygon(5% 0, 100% 0, 100% 80%, 95% 100%, 0 100%, 0 20%); }
+    .btn-tactical:hover { filter: brightness(1.2); box-shadow: 0 0 20px var(--neon-blue); }
+    
+    .btn-tactical.pulse { animation: tactical-pulse 2s infinite; }
+    @@keyframes tactical-pulse {
+        0% { box-shadow: 0 0 0 0 rgba(0, 242, 254, 0.7); }
+        70% { box-shadow: 0 0 0 15px rgba(0, 242, 254, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(0, 242, 254, 0); }
+    }
+</style>
+
+@code {
+    private int killCount = 0;
+    private bool isMissionActive = false;
+    private DotNetObjectReference<Index>? objRef;
+    private List<CombatEntry> CombatLog = new();
+
+    public class CombatEntry
+    {
+        public DateTime Timestamp { get; set; } = DateTime.Now;
+        public string Message { get; set; } = "";
+        public string Reasoning { get; set; } = "";
+        public string RawIntel { get; set; } = "";
+        public string SensorContext { get; set; } = "";
+        public string LogType { get; set; } = "SYSTEM"; // FOE, FRIEND, SYSTEM
+        public bool ShowRaw { get; set; } = false;
+        public bool ShowSensors { get; set; } = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            objRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("DroneWars.init", "droneCanvas", objRef);
+        }
+    }
+
+    private async Task ToggleMission()
+    {
+        isMissionActive = !isMissionActive;
+        CombatLog.Add(new CombatEntry { Message = isMissionActive ? "MISSION SORTIE COMMENCED" : "MISSION SORTIE ABORTED" });
+        
+        if (isMissionActive)
+        {
+            await JS.InvokeVoidAsync("DroneWars.resetSensors");
+        }
+    }
+
+    [JSInvokable]
+    public void OnSystemCheck(string status)
+    {
+        CombatLog.Add(new CombatEntry { Message = $"[HEARTBEAT] {status}" });
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public async Task OnPOIDetected(string signatureJson)
+    {
+        if (!isMissionActive) 
+        {
+            CombatLog.Add(new CombatEntry { Message = "SYSTEM: Target signature captured. Waiting for MISSION_EXECUTE auth.", LogType = "SYSTEM" });
+            StateHasChanged();
+            return;
+        }
+
+        var signature = JsonDocument.Parse(signatureJson).RootElement;
+        var id = signature.GetProperty("id").GetString();
+        
+        CombatLog.Add(new CombatEntry { Message = $"TARGET SPOTTED: {id}. Analyzing signatures..." });
+        StateHasChanged();
+
+        var intel = await AI.AnalyzeTargetAsync(signatureJson);
+        
+        CombatLog.Add(new CombatEntry { 
+            Message = $"ID: {id} | CLASSIFIED: {intel.ThreatLevel}", 
+            Reasoning = intel.Reasoning, 
+            RawIntel = intel.RawJson,
+            SensorContext = signatureJson,
+            LogType = intel.ThreatLevel 
+        });
+
+        if (intel.Engage)
+        {
+            killCount++;
+            CombatLog.Add(new CombatEntry { Message = "ORDERS: NEUTRALIZE TARGET.", LogType = "FOE" });
+            await JS.InvokeVoidAsync("DroneWars.engageTarget", id);
+        }
+        else
+        {
+            CombatLog.Add(new CombatEntry { Message = "ORDERS: MONITOR ONLY." });
+        }
+
+        StateHasChanged();
+    }
+}
