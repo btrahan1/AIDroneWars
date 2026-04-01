@@ -41,22 +41,26 @@ window.DroneWars = {
 
     createScene: function () {
         this.scene = new BABYLON.Scene(this.engine);
-        this.scene.clearColor = new BABYLON.Color4(0, 0, 0, 1);
+        
+        // Atmosphere: Dusty Mad Max Orange
+        this.scene.clearColor = new BABYLON.Color3(0.8, 0.5, 0.2);
+        this.scene.fogMode = BABYLON.Scene.FOGMODE_NONE;
 
-        // Tactical Skybox-ish grid
-        this.scene.createDefaultEnvironment({
-            createGround: true,
-            groundSize: 300,
-            groundColor: new BABYLON.Color3(0.05, 0.05, 0.1),
-            enableGroundMirror: false,
-            createSkybox: false
-        });
+        // Desert Ground Reconstruction (300m x 300m)
+        const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 300, height: 300 }, this.scene);
+        const sandMat = new BABYLON.StandardMaterial("sand", this.scene);
+        sandMat.diffuseTexture = new BABYLON.Texture("https://www.babylonjs-playground.com/textures/sand.jpg", this.scene);
+        sandMat.diffuseTexture.uScale = 50;
+        sandMat.diffuseTexture.vScale = 50;
+        sandMat.specularColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+        ground.material = sandMat;
 
         this.camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 3, 120, new BABYLON.Vector3(0, 0, 0), this.scene);
         this.camera.attachControl(this.canvas, true);
 
         const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), this.scene);
         light.intensity = 1.0; 
+        light.diffuse = new BABYLON.Color3(1.0, 0.9, 0.7); // Warm Desert Sun
 
         // BUILD VIPER DRONE
         this.buildViperDrone();
