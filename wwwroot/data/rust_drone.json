@@ -1,0 +1,135 @@
+{
+"Name": "Futuristic_Rust_Drone",
+"Parts": [
+{
+"Id": "main_chassis",
+"ParentId": null,
+"Shape": "Box",
+"Position": [0, 1, 0],
+"Rotation": [0, 0, 0],
+"Scale": [1, 0.5, 1.2],
+"ColorHex": "#5D4037",
+"Material": "Metal"
+},
+{
+"Id": "cockpit_canopy",
+"ParentId": "main_chassis",
+"Shape": "Sphere",
+"Position": [0, 0.25, 0.3],
+"Rotation": [0, 0, 0],
+"Scale": [0.7, 0.4, 0.6],
+"ColorHex": "#A9D0F5",
+"Material": "Glass"
+},
+{
+"Id": "engine_mount_fl",
+"ParentId": "main_chassis",
+"Shape": "Cylinder",
+"Position": [-0.6, 0, 0.5],
+"Rotation": [90, 0, 0],
+"Scale": [0.3, 0.6, 0.3],
+"ColorHex": "#3E2723",
+"Material": "Metal"
+},
+{
+"Id": "neon_core_fl",
+"ParentId": "engine_mount_fl",
+"Shape": "Cylinder",
+"Position": [0, -0.35, 0],
+"Rotation": [0, 0, 0],
+"Scale": [0.2, 0.1, 0.2],
+"ColorHex": "#00F2FF",
+"Material": "Glow"
+},
+{
+"Id": "engine_mount_fr",
+"ParentId": "main_chassis",
+"Shape": "Cylinder",
+"Position": [0.6, 0, 0.5],
+"Rotation": [90, 0, 0],
+"Scale": [0.3, 0.6, 0.3],
+"ColorHex": "#3E2723",
+"Material": "Metal"
+},
+{
+"Id": "neon_core_fr",
+"ParentId": "engine_mount_fr",
+"Shape": "Cylinder",
+"Position": [0, -0.35, 0],
+"Rotation": [0, 0, 0],
+"Scale": [0.2, 0.1, 0.2],
+"ColorHex": "#00F2FF",
+"Material": "Glow"
+},
+{
+"Id": "engine_mount_bl",
+"ParentId": "main_chassis",
+"Shape": "Cylinder",
+"Position": [-0.6, 0, -0.5],
+"Rotation": [90, 0, 0],
+"Scale": [0.3, 0.6, 0.3],
+"ColorHex": "#3E2723",
+"Material": "Metal"
+},
+{
+"Id": "neon_core_bl",
+"ParentId": "engine_mount_bl",
+"Shape": "Cylinder",
+"Position": [0, -0.35, 0],
+"Rotation": [0, 0, 0],
+"Scale": [0.2, 0.1, 0.2],
+"ColorHex": "#00F2FF",
+"Material": "Glow"
+},
+{
+"Id": "engine_mount_br",
+"ParentId": "main_chassis",
+"Shape": "Cylinder",
+"Position": [0.6, 0, -0.5],
+"Rotation": [90, 0, 0],
+"Scale": [0.3, 0.6, 0.3],
+"ColorHex": "#3E2723",
+"Material": "Metal"
+},
+{
+"Id": "neon_core_br",
+"ParentId": "engine_mount_br",
+"Shape": "Cylinder",
+"Position": [0, -0.35, 0],
+"Rotation": [0, 0, 0],
+"Scale": [0.2, 0.1, 0.2],
+"ColorHex": "#00F2FF",
+"Material": "Glow"
+},
+{
+"Id": "stabilizer_fin_l",
+"ParentId": "main_chassis",
+"Shape": "Box",
+"Position": [-0.5, 0.3, -0.4],
+"Rotation": [0, 0, 45],
+"Scale": [0.1, 0.4, 0.4],
+"ColorHex": "#4E342E",
+"Material": "Metal"
+},
+{
+"Id": "stabilizer_fin_r",
+"ParentId": "main_chassis",
+"Shape": "Box",
+"Position": [0.5, 0.3, -0.4],
+"Rotation": [0, 0, -45],
+"Scale": [0.1, 0.4, 0.4],
+"ColorHex": "#4E342E",
+"Material": "Metal"
+},
+{
+"Id": "rear_thruster_glow",
+"ParentId": "main_chassis",
+"Shape": "Cone",
+"Position": [0, 0, -0.65],
+"Rotation": [-90, 0, 0],
+"Scale": [0.4, 0.4, 0.4],
+"ColorHex": "#FF3D00",
+"Material": "Glow"
+}
+]
+}

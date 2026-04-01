@@ -205,6 +205,8 @@
         isMissionActive = !isMissionActive;
         CombatLog.Add(new CombatEntry { Message = isMissionActive ? "MISSION SORTIE COMMENCED" : "MISSION SORTIE ABORTED" });
         
+        await JS.InvokeVoidAsync("DroneWars.setPatrol", isMissionActive);
+        
         if (isMissionActive)
         {
             await JS.InvokeVoidAsync("DroneWars.resetSensors");
@@ -257,8 +259,8 @@
         {
             killCount++;
             IdentifiedTargets[id].IsNeutralized = true;
-            CombatLog.Add(new CombatEntry { Message = "ORDERS: NEUTRALIZE TARGET. KINETIC STRIKE INITIATED.", LogType = "FOE" });
-            await JS.InvokeVoidAsync("DroneWars.engageTarget", id);
+            CombatLog.Add(new CombatEntry { Message = "ORDERS: NEUTRALIZE TARGET. STRIKER LAUNCHED FROM FOB ALPHA.", LogType = "FOE" });
+            await JS.InvokeVoidAsync("DroneWars.launchAttackDrone", id);
         }
         else
         {
