@@ -52,11 +52,10 @@
 
 @media (min-width: 641px) {
     .navbar-toggler {
-        display: none;
+        display: block; /* Always allow tactical toggle */
     }
 
     .collapse {
-        /* Never collapse the sidebar for wide screens */
-        display: block;
+        display: none; /* Respect the collapsed state */
     }
 }

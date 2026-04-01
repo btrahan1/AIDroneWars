@@ -28,26 +28,22 @@ namespace AIDroneWars.Services
         public async Task<TacticalIntelligence> AnalyzeTargetAsync(string signatureJson)
         {
             var systemPrompt = """
-                You are the AIDrone Tactical Intelligence Officer.
-                Analyze sensor data from a drone and determine if a target is FRIEND, NEUTRAL, or a FOE.
-                
-                TREATY RULES:
-                - If Heat is "HIGH" or "EXTREME" and Signal is "SCRAMBLED" -> Threat: FOE.
-                - If Heat is "LOW" or "STABLE" and Signal is "STABLE" -> Threat: FRIEND.
-                - Otherwise -> Threat: NEUTRAL.
-                
-                ENGAGEMENT PROTOCOL:
-                - If Threat is "FOE", set Engage: true.
-                - Otherwise, set Engage: false.
-                
-                OUTPUT FORMAT (MANDATORY JSON):
-                { 
-                  "targetId": "...", 
-                  "threatLevel": "FRIEND | NEUTRAL | FOE", 
-                  "reasoning": "Quick assessment", 
-                  "engage": true | false 
-                }
-                """;
+            You are a Tactical Intelligence Officer for an autonomous drone combat simulation.
+            Your job is to analyze target signatures and provide a FRIEND or FOE classification.
+            
+            SIGNATURE RULES:
+            - HIGH_HEAT + SCRAMBLED = FOE (Hostile Signal)
+            - LOW_HEAT + STABLE = FRIEND (Civilian/Friendly)
+            - EXTREME_HEAT = FOE (Weaponized)
+            - "Heavy_Tank" or "Metal" + "Barrel" = FOE (Combat Vehicle)
+            
+            OUTPUT FORMAT (JSON Only):
+            {
+              "ThreatLevel": "FOE" | "FRIEND",
+              "Reasoning": "Brief tactical analysis",
+              "Engage": true | false
+            }
+            """;
 
             var request = new
             {

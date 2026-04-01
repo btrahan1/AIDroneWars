@@ -1,0 +1,190 @@
+{
+"Name": "Aerial_Attack_Drone_Viper",
+"Type": "Procedural",
+"Parts": [
+{
+"Id": "fuselage_main",
+"ParentId": null,
+"Shape": "Capsule",
+"Position": [0.0, 1.5, 0.0],
+"Rotation": [90, 0, 0],
+"Scale": [0.7, 2.0, 0.7],
+"ColorHex": "#4A4D43",
+"Material": "Metal",
+"Operation": "Union"
+},
+{
+"Id": "tail_boom",
+"ParentId": null,
+"Shape": "Cylinder",
+"Position": [0.0, 1.6, -1.8],
+"Rotation": [90, 0, 0],
+"Scale": [0.15, 2.2, 0.15],
+"ColorHex": "#3E4238",
+"Material": "Metal",
+"Operation": "Union"
+},
+{
+"Id": "main_rotor_shaft",
+"ParentId": null,
+"Shape": "Cylinder",
+"Position": [0.0, 2.0, 0.0],
+"Rotation": [0, 0, 0],
+"Scale": [0.1, 0.5, 0.1],
+"ColorHex": "#1A1A1A",
+"Material": "Metal",
+"Operation": "Union"
+},
+{
+"Id": "main_rotor_blades",
+"ParentId": null,
+"Shape": "Box",
+"Position": [0.0, 2.2, 0.0],
+"Rotation": [0, 0, 0],
+"Scale": [5.0, 0.02, 0.2],
+"ColorHex": "#111111",
+"Material": "Plastic",
+"Operation": "Union"
+},
+{
+"Id": "tail_rotor_hub",
+"ParentId": null,
+"Shape": "Cylinder",
+"Position": [0.2, 1.7, -2.7],
+"Rotation": [0, 0, 90],
+"Scale": [0.08, 0.2, 0.08],
+"ColorHex": "#1A1A1A",
+"Material": "Metal",
+"Operation": "Union"
+},
+{
+"Id": "tail_rotor_blades",
+"ParentId": null,
+"Shape": "Box",
+"Position": [0.25, 1.7, -2.7],
+"Rotation": [0, 0, 90],
+"Scale": [0.8, 0.02, 0.1],
+"ColorHex": "#111111",
+"Material": "Plastic",
+"Operation": "Union"
+},
+{
+"Id": "sensor_pod",
+"ParentId": null,
+"Shape": "Sphere",
+"Position": [0.0, 1.2, 0.8],
+"Rotation": [0, 0, 0],
+"Scale": [0.4, 0.4, 0.4],
+"ColorHex": "#1A1A1A",
+"Material": "Glass",
+"Operation": "Union"
+},
+{
+"Id": "sensor_lens",
+"ParentId": null,
+"Shape": "Sphere",
+"Position": [0.0, 1.2, 0.95],
+"Rotation": [0, 0, 0],
+"Scale": [0.15, 0.15, 0.15],
+"ColorHex": "#FF0000",
+"Material": "Glow",
+"Operation": "Union"
+},
+{
+"Id": "weapon_pylon_l",
+"ParentId": null,
+"Shape": "Box",
+"Position": [0.6, 1.4, 0.0],
+"Rotation": [0, 0, 0],
+"Scale": [0.6, 0.1, 0.3],
+"ColorHex": "#3E4238",
+"Material": "Metal",
+"Operation": "Union"
+},
+{
+"Id": "weapon_pylon_r",
+"ParentId": null,
+"Shape": "Box",
+"Position": [-0.6, 1.4, 0.0],
+"Rotation": [0, 0, 0],
+"Scale": [0.6, 0.1, 0.3],
+"ColorHex": "#3E4238",
+"Material": "Metal",
+"Operation": "Union"
+},
+{
+"Id": "machine_gun_barrel",
+"ParentId": null,
+"Shape": "Cylinder",
+"Position": [0.75, 1.25, 0.4],
+"Rotation": [90, 0, 0],
+"Scale": [0.08, 0.8, 0.08],
+"ColorHex": "#111111",
+"Material": "Metal",
+"Operation": "Union"
+},
+{
+"Id": "rocket_pod_r",
+"ParentId": null,
+"Shape": "Cylinder",
+"Position": [-0.75, 1.25, 0.2],
+"Rotation": [90, 0, 0],
+"Scale": [0.3, 0.6, 0.3],
+"ColorHex": "#222222",
+"Material": "Metal",
+"Operation": "Union"
+},
+{
+"Id": "skid_l",
+"ParentId": null,
+"Shape": "Box",
+"Position": [0.5, 0.5, 0.0],
+"Rotation": [0, 0, 0],
+"Scale": [0.1, 0.1, 2.2],
+"ColorHex": "#1A1A1A",
+"Material": "Metal",
+"Operation": "Union"
+},
+{
+"Id": "skid_r",
+"ParentId": null,
+"Shape": "Box",
+"Position": [-0.5, 0.5, 0.0],
+"Rotation": [0, 0, 0],
+"Scale": [0.1, 0.1, 2.2],
+"ColorHex": "#1A1A1A",
+"Material": "Metal",
+"Operation": "Union"
+}
+],
+"Timeline": [
+{
+"Time": 0.0,
+"Action": "Rotate",
+"TargetId": "main_rotor_blades",
+"Value": [0, 3600, 0],
+"Duration": 2.0
+},
+{
+"Time": 0.0,
+"Action": "Rotate",
+"TargetId": "tail_rotor_blades",
+"Value": [3600, 0, 0],
+"Duration": 1.0
+},
+{
+"Time": 0.0,
+"Action": "Rotate",
+"TargetId": "sensor_pod",
+"Value": [0, 30, 0],
+"Duration": 1.5
+},
+{
+"Time": 1.5,
+"Action": "Rotate",
+"TargetId": "sensor_pod",
+"Value": [0, -30, 0],
+"Duration": 3.0
+}
+]
+}

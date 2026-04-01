@@ -2,7 +2,7 @@
 @using AIDroneWars.Services
 @using Microsoft.JSInterop
 @inject IJSRuntime JS
-@inject OllamaService AI
+@inject OllamaService IntelOfficer
 
 <PageTitle>AIDroneWars | Tactical Satellite Console</PageTitle>
 
@@ -76,6 +76,21 @@
 
     <div class="viewport">
         <canvas id="droneCanvas"></canvas>
+
+        <div class="target-monitor">
+            <div class="target-header">IDENTIFIED TARGETS</div>
+            <div class="target-list">
+                @foreach (var target in IdentifiedTargets.Values.OrderBy(t => t.IsNeutralized))
+                {
+                    <div class="target-item @(target.IsNeutralized ? "neutralized" : target.Classification.ToLower())">
+                        <span class="t-id">@target.Id</span>
+                        <span class="t-class">@target.Classification</span>
+                        <span class="t-status">[@(target.IsNeutralized ? "NEUTRALIZED" : "ACTIVE")]</span>
+                    </div>
+                }
+            </div>
+        </div>
+
         <div class="overlay-hud">
             <div class="crosshair"></div>
             <div class="sensor-overlay">TARGET_SCAN_RESERVE_0x44</div>
@@ -127,6 +142,14 @@
     .viewport { flex: 1; position: relative; }
     #droneCanvas { width: 100%; height: 100%; display: block; outline: none; }
 
+    .target-monitor { position: absolute; top: 1rem; right: 1rem; width: 220px; background: rgba(0,0,0,0.7); border: 1px solid var(--neon-blue); padding: 0.5rem; color: white; pointer-events: none; }
+    .target-header { font-size: 0.6rem; border-bottom: 1px solid rgba(0,242,254,0.3); padding-bottom: 0.3rem; margin-bottom: 0.5rem; letter-spacing: 1px; color: var(--neon-blue); }
+    .target-item { display: flex; justify-content: space-between; font-family: monospace; font-size: 0.55rem; margin-bottom: 0.2rem; padding: 0.1rem 0.3rem; }
+    .target-item.neutralized { text-decoration: line-through; opacity: 0.4; background: rgba(255,255,255,0.05); }
+    .target-item.foe { color: var(--neon-red); border-left: 2px solid var(--neon-red); background: rgba(255,0,0,0.1); }
+    .target-item.friend { color: var(--neon-green); border-left: 2px solid var(--neon-green); background: rgba(0,255,0,0.05); }
+    .t-status { font-weight: bold; }
+
     .overlay-hud { position: absolute; pointer-events: none; top: 0; left: 0; right: 0; bottom: 0; border: 40px solid rgba(0, 10, 20, 0.2); }
     .crosshair { position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--neon-blue); opacity: 0.3; transform: translate(-50%, -50%); }
     .sensor-overlay { position: absolute; bottom: 20px; left: 20px; font-size: 0.7rem; color: var(--neon-blue); }
@@ -147,6 +170,14 @@
     private bool isMissionActive = false;
     private DotNetObjectReference<Index>? objRef;
     private List<CombatEntry> CombatLog = new();
+    private Dictionary<string, TacticalTarget> IdentifiedTargets = new();
+
+    public class TacticalTarget
+    {
+        public string Id { get; set; } = "";
+        public string Classification { get; set; } = "SCANNING";
+        public bool IsNeutralized { get; set; } = false;
+    }
 
     public class CombatEntry
     {
@@ -190,20 +221,26 @@
     [JSInvokable]
     public async Task OnPOIDetected(string signatureJson)
     {
+        var signature = JsonDocument.Parse(signatureJson).RootElement;
+        var id = signature.GetProperty("id").GetString();
+
+        // Update Target Monitor IMMEDIATELY
+        if (!IdentifiedTargets.ContainsKey(id)) {
+            IdentifiedTargets[id] = new TacticalTarget { Id = id, Classification = "PENDING" };
+        }
+        StateHasChanged();
+
         if (!isMissionActive) 
         {
-            CombatLog.Add(new CombatEntry { Message = "SYSTEM: Target signature captured. Waiting for MISSION_EXECUTE auth.", LogType = "SYSTEM" });
+            CombatLog.Add(new CombatEntry { Message = $"SYSTEM: Target {id} signature captured. Waiting for auth.", LogType = "SYSTEM" });
             StateHasChanged();
             return;
         }
-
-        var signature = JsonDocument.Parse(signatureJson).RootElement;
-        var id = signature.GetProperty("id").GetString();
         
-        CombatLog.Add(new CombatEntry { Message = $"TARGET SPOTTED: {id}. Analyzing signatures..." });
+        CombatLog.Add(new CombatEntry { Message = $"TARGET SPOTTED: {id}. Analyzing signatures...", LogType = "SYSTEM" });
         StateHasChanged();
 
-        var intel = await AI.AnalyzeTargetAsync(signatureJson);
+        var intel = await IntelOfficer.AnalyzeTargetAsync(signatureJson);
         
         CombatLog.Add(new CombatEntry { 
             Message = $"ID: {id} | CLASSIFIED: {intel.ThreatLevel}", 
@@ -213,10 +250,14 @@
             LogType = intel.ThreatLevel 
         });
 
+        // Finalize Classification in Monitor
+        IdentifiedTargets[id].Classification = intel.ThreatLevel;
+
         if (intel.Engage)
         {
             killCount++;
-            CombatLog.Add(new CombatEntry { Message = "ORDERS: NEUTRALIZE TARGET.", LogType = "FOE" });
+            IdentifiedTargets[id].IsNeutralized = true;
+            CombatLog.Add(new CombatEntry { Message = "ORDERS: NEUTRALIZE TARGET. KINETIC STRIKE INITIATED.", LogType = "FOE" });
             await JS.InvokeVoidAsync("DroneWars.engageTarget", id);
         }
         else
