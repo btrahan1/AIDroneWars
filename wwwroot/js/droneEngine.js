@@ -14,11 +14,14 @@ window.DroneWars = {
     intervalPulse: null,
     dotNetHelper: null,
     instanceRegistry: {},
-    viperRegistry: {},
 
     SCHEMATICS: {
         BaseAlpha: {
             "Name": "MarsColonyBase_Alpha",
+            "Timeline": [
+                { "Target": "comms_dish", "Action": "Rotate", "Axis": "Y", "Speed": 0.05 },
+                { "Target": "status_light", "Action": "Pulse", "Speed": 0.005, "Min": 1.0, "Max": 5.0 }
+            ],
             "Parts": [
                 { "Id": "base_foundation", "ParentId": null, "Shape": "Box", "Position": [0, -0.05, 0], "Rotation": [0, 0, 0], "Scale": [12, 0.1, 12], "ColorHex": "#332211", "Material": "Metal" },
                 { "Id": "central_hub", "ParentId": null, "Shape": "Cylinder", "Position": [0, 1.0, 0], "Rotation": [0, 0, 0], "Scale": [4, 2, 4], "ColorHex": "#E0E0E0", "Material": "Plastic" },
@@ -57,6 +60,9 @@ window.DroneWars = {
         },
         ViperScout: {
             "Name": "Viper_Scout_Mk2",
+            "Timeline": [
+                { "Target": "main_rotor", "Action": "Rotate", "Axis": "Y", "Speed": 0.5 }
+            ],
             "Parts": [
                 { "Id": "fuselage_main", "ParentId": null, "Shape": "Capsule", "Position": [0, 0, 0], "Rotation": [0, 0, 0], "Scale": [1.5, 0.8, 2.5], "ColorHex": "#111111", "Material": "Metal" },
                 { "Id": "cockpit_sensor", "ParentId": "fuselage_main", "Shape": "Box", "Position": [0, 0.3, 0.5], "Rotation": [0, 0, 0], "Scale": [0.3, 0.1, 0.4], "ColorHex": "#EEEEEE", "Material": "Plastic" },
@@ -75,6 +81,7 @@ window.DroneWars = {
         },
         HeavyTank: {
             "Name": "Apex_Heavy_Tank_Mk2",
+            "Tags": ["POI", "Targetable", "Hostile"],
             "Parts": [
                 { "Id": "hull_main", "ParentId": null, "Shape": "Box", "Position": [0, 0.1, 0], "Rotation": [0, 0, 0], "Scale": [4.2, 0.8, 6.5], "ColorHex": "#111111", "Material": "Metal" },
                 { "Id": "track_l", "ParentId": null, "Shape": "Box", "Position": [-2.8, 0.5, 0], "Rotation": [0, 0, 0], "Scale": [1.4, 1.8, 8.2], "ColorHex": "#444444", "Material": "Metal" },
@@ -129,15 +136,15 @@ window.DroneWars = {
         const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), this.scene);
         light.intensity = 0.8;
 
-        this.buildViperDrone();
+        this.drone = this.spawnAsset("ViperScout", new BABYLON.Vector3(0, 10, 0)).root;
         this.searchlight = new BABYLON.SpotLight("searchlight", new BABYLON.Vector3(0, -0.3, 0.8), new BABYLON.Vector3(0, -1, 0.3), Math.PI / 3, 2, this.scene);
         this.searchlight.parent = this.drone;
 
-        this.buildBaseAlpha();
+        this.spawnAsset("BaseAlpha", this.basePos);
 
-        this.createPOI("APEX_T_01", new BABYLON.Vector3(50, 0.1, 50), "heavy_tank", "EXTREME", "SCRAMBLED");
-        this.createPOI("APEX_T_02", new BABYLON.Vector3(-55, 0.1, 60), "heavy_tank", "EXTREME", "SCRAMBLED");
-        this.createPOI("APEX_T_03", new BABYLON.Vector3(0, 0.1, -60), "heavy_tank", "EXTREME", "SCRAMBLED");
+        this.spawnAsset("HeavyTank", new BABYLON.Vector3(50, 0.1, 50), { id: "APEX_T_01" });
+        this.spawnAsset("HeavyTank", new BABYLON.Vector3(-55, 0.1, 60), { id: "APEX_T_02" });
+        this.spawnAsset("HeavyTank", new BABYLON.Vector3(0, 0.1, -60), { id: "APEX_T_03" });
 
         const pipeline = new BABYLON.DefaultRenderingPipeline("pp", true, this.scene, [this.camera]);
         pipeline.bloomEnabled = true; pipeline.bloomThreshold = 0.6; pipeline.bloomWeight = 0.5;
@@ -161,6 +168,41 @@ window.DroneWars = {
         
         mat.reflectionTexture = this.scene.environmentTexture;
         return mat;
+    },
+
+    runTimeline: function(assetInstance) {
+        if (!assetInstance.schematic.Timeline) return;
+        this.scene.onBeforeRenderObservable.add(() => {
+            assetInstance.schematic.Timeline.forEach(step => {
+                const part = assetInstance.registry[step.Target];
+                if (!part) return;
+                if (step.Action === "Rotate") {
+                    if (step.Axis === "Y") part.rotation.y += step.Speed;
+                    else if (step.Axis === "X") part.rotation.x += step.Speed;
+                } else if (step.Action === "Pulse") {
+                    const val = (step.Min || 1.0) + Math.sin(Date.now() * step.Speed) * ((step.Max || 5.0) - (step.Min || 1.0));
+                    if (part.material && part.material.emissiveIntensity !== undefined) part.material.emissiveIntensity = val;
+                }
+            });
+        });
+    },
+
+    spawnAsset: function(schematicKey, position, meta = {}) {
+        const schematic = this.SCHEMATICS[schematicKey];
+        if (!schematic) return null;
+        const res = this.spawnRecipe(schematic);
+        const root = res.root; root.position = position;
+        const assetId = meta.id || schematicKey + "_" + Math.random().toString(36).substr(2, 5);
+        root.name = assetId + "_root";
+
+        if (schematic.Tags && schematic.Tags.includes("POI")) {
+            root.metadata = { id: assetId, type: "poi", shape: schematicKey, heat: "EXTREME", signal: "SCRAMBLED", pos: [position.x, position.y, position.z] };
+            const triggerBox = BABYLON.MeshBuilder.CreateBox(assetId, { size: 6 }, this.scene);
+            triggerBox.parent = root; triggerBox.visibility = 0; triggerBox.metadata = root.metadata;
+        }
+
+        this.runTimeline({ root, registry: res.registry, schematic });
+        return res;
     },
 
     spawnRecipe: function(json, parentNode = null, registry = null) {
@@ -189,7 +231,7 @@ window.DroneWars = {
         json.Parts.forEach(p => {
             const mesh = reg[p.Id]; mesh.computeWorldMatrix(true);
             if (p.ParentId && reg[p.ParentId]) {
-                mesh.setParent(reg[p.ParentId]); // Industrial parenting handles scaling/rotation correctly
+                mesh.setParent(reg[p.ParentId]);
             } else {
                 mesh.setParent(container);
             }
@@ -197,31 +239,8 @@ window.DroneWars = {
         return { root: container, registry: reg };
     },
 
-    buildBaseAlpha: function() {
-        const base = this.spawnRecipe(this.SCHEMATICS.BaseAlpha);
-        base.root.position = this.basePos;
-        this.instanceRegistry = base.registry;
-        this.scene.onBeforeRenderObservable.add(() => {
-            if (this.instanceRegistry["comms_dish"]) this.instanceRegistry["comms_dish"].rotation.y += 0.05;
-            if (this.instanceRegistry["status_light"]) {
-                const pulse = 0.5 + Math.sin(Date.now() * 0.005) * 0.5;
-                this.instanceRegistry["status_light"].material.emissiveIntensity = 1.0 + pulse * 4.0;
-            }
-        });
-    },
-
-    buildViperDrone: function() {
-        const res = this.spawnRecipe(this.SCHEMATICS.ViperScout);
-        this.drone = res.root; this.viperRegistry = res.registry;
-        this.drone.position = new BABYLON.Vector3(0, 10, 0);
-        this.scene.onBeforeRenderObservable.add(() => {
-            if (this.viperRegistry["main_rotor"]) this.viperRegistry["main_rotor"].rotation.y += 0.5;
-        });
-    },
-
     launchAttackDrone: function (targetId) {
-        const res = this.spawnRecipe(this.SCHEMATICS.RustDrone);
-        res.root.position = this.basePos.add(new BABYLON.Vector3(0, 2, 0));
+        const res = this.spawnAsset("RustDrone", this.basePos.add(new BABYLON.Vector3(0, 2, 0)));
         this.strikers.push({ id: "striker_" + Math.random().toString(36).substr(2, 5), root: res.root, targetId: targetId, state: "LAUNCHING", speed: 0.5 });
     },
 
@@ -281,21 +300,5 @@ window.DroneWars = {
         const explosion = new BABYLON.ParticleSystem("explosion", 500, this.scene);
         explosion.particleTexture = new BABYLON.Texture("https://www.babylonjs-playground.com/textures/flare.png", this.scene);
         explosion.emitter = pos; explosion.targetStopDuration = 1.0; explosion.start();
-    },
-
-    createPOI: function(id, pos, shape, heat, signal) {
-        if (shape === "heavy_tank") return this.createHeavyTank(id, pos);
-        let mesh = BABYLON.MeshBuilder.CreateBox(id, { size: 1.5 }, this.scene); mesh.position = pos;
-        mesh.metadata = { id, type: "poi", shape, heat, signal, pos: [pos.x, pos.y, pos.z] };
-        return mesh;
-    },
-
-    createHeavyTank: function(id, pos) {
-        const res = this.spawnRecipe(this.SCHEMATICS.HeavyTank);
-        const root = res.root; root.name = id + "_root"; root.position = pos;
-        root.metadata = { id, type: "poi", shape: "Heavy_Tank", heat: "EXTREME", signal: "SCRAMBLED", pos: [pos.x, pos.y, pos.z] };
-        const triggerBox = BABYLON.MeshBuilder.CreateBox(id, { size: 6 }, this.scene);
-        triggerBox.parent = root; triggerBox.visibility = 0; triggerBox.metadata = root.metadata;
-        return root;
     }
 };
